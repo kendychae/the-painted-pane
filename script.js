@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('nav-menu');
     const navLinks = document.querySelectorAll('.nav-link');
+    const navbar = document.querySelector('.navbar');
+
+    // Initialize scroll animations
+    initScrollAnimations();
+    
+    // Add staggered animations to elements on page load
+    addStaggeredAnimations();
 
     // Toggle mobile menu
     hamburger.addEventListener('click', function() {
@@ -87,25 +94,108 @@ document.addEventListener('DOMContentLoaded', function() {
         this.reset();
     });
 
-    // Gallery item click handling for mobile
+    // Gallery item click handling for mobile with enhanced animation
     const galleryItems = document.querySelectorAll('.gallery-item');
     
     galleryItems.forEach(item => {
         item.addEventListener('click', function() {
+            // Add a ripple effect
+            createRippleEffect(this);
+            
             // Add a subtle animation feedback
-            this.style.transform = 'scale(0.98)';
+            this.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 this.style.transform = '';
             }, 150);
         });
+        
+        // Add hover effect for desktop
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.02)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+        });
+    });
+
+    // Enhanced button animations
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 10px 25px rgba(236, 72, 153, 0.3)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+        });
+        
+        button.addEventListener('click', function(e) {
+            createRippleEffect(this, e);
+        });
     });
 
     // Add scroll effects
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', debouncedScrollHandler);
     
     // Initial scroll check
     handleScroll();
+    checkScrollAnimations();
 });
+
+// Create ripple effect
+function createRippleEffect(element, event = null) {
+    const ripple = document.createElement('span');
+    const rect = element.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    
+    if (event) {
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+    } else {
+        ripple.style.left = '50%';
+        ripple.style.top = '50%';
+        ripple.style.transform = 'translate(-50%, -50%)';
+    }
+    
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.className = 'ripple-effect';
+    
+    // Add ripple styles
+    ripple.style.position = 'absolute';
+    ripple.style.borderRadius = '50%';
+    ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+    ripple.style.transform = 'scale(0)';
+    ripple.style.animation = 'ripple 0.6s linear';
+    ripple.style.pointerEvents = 'none';
+    
+    // Add keyframe for ripple animation
+    if (!document.getElementById('ripple-styles')) {
+        const style = document.createElement('style');
+        style.id = 'ripple-styles';
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    element.style.position = 'relative';
+    element.style.overflow = 'hidden';
+    element.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+}
 
 // Email validation function
 function isValidEmail(email) {
@@ -181,18 +271,76 @@ function removeNotification(notification) {
     }
 }
 
-// Scroll handling for navbar
+// Scroll handling for navbar and animations
 function handleScroll() {
     const navbar = document.querySelector('.navbar');
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     
+    // Navbar background change
     if (scrollTop > 100) {
-        navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-        navbar.style.backdropFilter = 'blur(10px)';
+        navbar.classList.add('scrolled');
     } else {
-        navbar.style.background = '#fff';
-        navbar.style.backdropFilter = 'none';
+        navbar.classList.remove('scrolled');
     }
+    
+    // Trigger scroll animations
+    checkScrollAnimations();
+}
+
+// Initialize scroll animations
+function initScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate');
+            }
+        });
+    }, observerOptions);
+
+    // Observe elements for animation
+    const animateElements = document.querySelectorAll('.section-header, .feature, .gallery-item, .service-card');
+    animateElements.forEach(el => observer.observe(el));
+}
+
+// Add staggered animations to gallery and service items
+function addStaggeredAnimations() {
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    const serviceCards = document.querySelectorAll('.service-card');
+    const features = document.querySelectorAll('.feature');
+    
+    // Stagger gallery items
+    galleryItems.forEach((item, index) => {
+        item.style.transitionDelay = `${index * 0.1}s`;
+    });
+    
+    // Stagger service cards
+    serviceCards.forEach((card, index) => {
+        card.style.transitionDelay = `${index * 0.15}s`;
+    });
+    
+    // Stagger features
+    features.forEach((feature, index) => {
+        feature.style.transitionDelay = `${index * 0.2}s`;
+    });
+}
+
+// Check for scroll animations
+function checkScrollAnimations() {
+    const elements = document.querySelectorAll('.section-header, .feature, .gallery-item, .service-card');
+    
+    elements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+        
+        if (elementTop < window.innerHeight - elementVisible) {
+            element.classList.add('animate');
+        }
+    });
 }
 
 // Touch-friendly enhancements
